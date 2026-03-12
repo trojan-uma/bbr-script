@@ -5,7 +5,7 @@ export PATH
 #=================================================
 #	System: CentOS 6/7, Debian 8+, Ubuntu 16+
 #	Description: 一键全自动优化加速你的服务器
-#	Version: 1.0.3
+#	Version: 1.0.4
 #	Author: 静水流深
 #	QQ群: 615298
 #=================================================
@@ -16,10 +16,25 @@ YELLOW='\033[0;33m'
 BLUE='\033[0;36m'
 PLAIN='\033[0m'
 
-sh_ver="1.0.3"
+sh_ver="1.0.4"
 
 # 检查root权限
 [[ $EUID -ne 0 ]] && echo -e "${RED}错误：请使用root用户运行此脚本${PLAIN}" && exit 1
+
+# 最小化环境引导：确保curl可用（解决curl未安装无法下载脚本的问题）
+if ! command -v curl &>/dev/null; then
+    echo -e "${YELLOW}检测到curl未安装，正在自动安装...${PLAIN}"
+    if command -v apt-get &>/dev/null; then
+        apt-get update -qq && apt-get install -y curl
+    elif command -v yum &>/dev/null; then
+        yum install -y curl
+    fi
+    if ! command -v curl &>/dev/null; then
+        echo -e "${RED}curl安装失败，请手动安装后重试: apt install curl 或 yum install curl${PLAIN}"
+        exit 1
+    fi
+    echo -e "${GREEN}curl安装完成${PLAIN}"
+fi
 
 # 系统信息
 if [[ -f /etc/os-release ]]; then
@@ -655,6 +670,19 @@ fixCentOSRepo
 echo ""
 echo -e "${GREEN}预检查完成！${PLAIN}"
 sleep 1
+
+# 智能判断：如果BBR已启用且内核版本足够，无需进入菜单
+if check_bbr_status && check_kernel_native_bbr >/dev/null 2>&1; then
+    echo ""
+    show_status
+    echo -e "${GREEN}╔════════════════════════════════════════════╗${PLAIN}"
+    echo -e "${GREEN}║  系统状态良好，BBR已启用，无需操作        ║${PLAIN}"
+    echo -e "${GREEN}╚════════════════════════════════════════════╝${PLAIN}"
+    echo ""
+    read -n1 -rp "按任意键退出..." key
+    echo ""
+    exit 0
+fi
 
 # 脚本入口
 show_menu
