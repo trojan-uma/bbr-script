@@ -681,7 +681,7 @@ if check_bbr_status && check_kernel_native_bbr >/dev/null 2>&1; then
     echo ""
     read -n1 -rp "按任意键退出..." key
     echo ""
-    exit 0
+    show_menu
 fi
 
 # 脚本入口
